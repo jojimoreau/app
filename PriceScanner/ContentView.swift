@@ -50,94 +50,106 @@ struct ExchangeRates {
 // MARK: - Price Parser
 
 struct PriceParser {
-    static let currencyPatterns: [(String, String)] = [
-        ("\\$\\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)", "USD"),
-        ("£\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "GBP"),
-        ("€\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "EUR"),
-        ("¥\\s*([0-9]+)", "JPY"),
-        ("₺\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "TRY"),
-        ("₹\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "INR"),
-        ("R\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "BRL"),
-        ("₩\\s*([0-9]+)", "KRW"),
-        ("A\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "AUD"),
-        ("CA\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "CAD"),
-        ("S\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "SGD"),
-        ("HK\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "HKD"),
-        ("Fr\\.?\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "CHF"),
-        ("zł\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "PLN"),
-        ("₪\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "ILS"),
-        ("₱\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "PHP"),
-        ("฿\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "THB"),
-        ("Rp\\.?\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "IDR"),
-        ("USD\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "USD"),
-        ("GBP\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "GBP"),
-        ("EUR\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "EUR"),
-        ("JPY\\s*([0-9]+)", "JPY"),
-        ("CHF\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "CHF"),
-        ("CAD\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "CAD"),
-        ("AUD\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "AUD"),
-        ("SEK\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "SEK"),
-        ("NOK\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "NOK"),
-        ("DKK\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "DKK"),
-        ("TRY\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "TRY"),
-        ("INR\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "INR"),
-        ("BRL\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "BRL"),
-        ("KRW\\s*([0-9]+)", "KRW"),
-        ("PLN\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "PLN"),
-        ("ZAR\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "ZAR"),
-        ("SGD\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "SGD"),
-        ("HKD\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "HKD"),
-        ("MXN\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "MXN"),
-        ("MYR\\s*([0-9]+(?:[.,][0-9]{1,2})?)", "MYR"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*USD", "USD"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*EUR", "EUR"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*GBP", "GBP"),
-        ("([0-9]+)\\s*JPY", "JPY"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*CHF", "CHF"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*CAD", "CAD"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*AUD", "AUD"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*SEK", "SEK"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*NOK", "NOK"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*DKK", "DKK"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*TRY", "TRY"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*INR", "INR"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*BRL", "BRL"),
-        ("([0-9]+)\\s*KRW", "KRW"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*PLN", "PLN"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*ZAR", "ZAR"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*SGD", "SGD"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*HKD", "HKD"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*MXN", "MXN"),
-        ("([0-9]+(?:[.,][0-9]{1,2})?)\\s*MYR", "MYR"),
+    // Ordered indicators — most-specific first to avoid substring overlap (e.g. CA$ before $)
+    static let currencyIndicators: [(String, String)] = [
+        ("¥", "JPY"), ("·", "JPY"),
+        ("£", "GBP"), ("€", "EUR"), ("₺", "TRY"), ("₹", "INR"),
+        ("₩", "KRW"), ("₪", "ILS"), ("₱", "PHP"), ("฿", "THB"),
+        ("R$", "BRL"), ("CA$", "CAD"), ("A$", "AUD"), ("S$", "SGD"),
+        ("HK$", "HKD"), ("MX$", "MXN"), ("$", "USD"),
+        ("Fr", "CHF"), ("Rp", "IDR"), ("zł", "PLN"),
+        ("JPY", "JPY"), ("USD", "USD"), ("EUR", "EUR"), ("GBP", "GBP"),
+        ("CHF", "CHF"), ("CAD", "CAD"), ("AUD", "AUD"), ("KRW", "KRW"),
+        ("SEK", "SEK"), ("NOK", "NOK"), ("DKK", "DKK"), ("TRY", "TRY"),
+        ("INR", "INR"), ("BRL", "BRL"), ("SGD", "SGD"), ("HKD", "HKD"),
+        ("MXN", "MXN"), ("MYR", "MYR"), ("PLN", "PLN"), ("ZAR", "ZAR"),
+        ("THB", "THB"), ("IDR", "IDR"), ("PHP", "PHP"), ("ILS", "ILS"),
     ]
 
-    static func parse(from text: String) -> ConversionResult? {
+    // `+` on the thousands-separator group requires at least one separator,
+    // so bare integers of any length fall through to the `[0-9]+` alternative.
+    static func numberPattern(for currency: String) -> String {
+        switch currency {
+        case "JPY", "KRW":
+            return "[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+"
+        default:
+            return "[0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?"
+        }
+    }
+
+    static func detectCurrency(in text: String) -> String? {
         let upper = text.uppercased()
-        for (pattern, currency) in currencyPatterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { continue }
-            let nsRange = NSRange(upper.startIndex..., in: upper)
-            guard let match = regex.firstMatch(in: upper, options: [], range: nsRange),
-                  let amtRange = Range(match.range(at: 1), in: upper) else { continue }
-            var s = String(upper[amtRange])
-            if s.filter({ $0 == "." }).count > 1 {
-                s = s.replacingOccurrences(of: ".", with: "")
-            } else if s.contains(",") && s.contains(".") {
-                if s.lastIndex(of: ",")! > s.lastIndex(of: ".")! {
-                    s = s.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
-                } else {
-                    s = s.replacingOccurrences(of: ",", with: "")
-                }
+        for (indicator, currency) in currencyIndicators {
+            if upper.contains(indicator.uppercased()) {
+                return currency
+            }
+        }
+        return nil
+    }
+
+    // Converts a raw number string (from regex match) to a Double.
+    // Handles thousands separators (comma or dot) and decimal separators.
+    static func normalizeAmountString(_ s: String) -> Double? {
+        var s = s
+        if s.filter({ $0 == "." }).count > 1 {
+            // Multiple dots → all are thousands separators (e.g. "1.234.567")
+            s = s.replacingOccurrences(of: ".", with: "")
+        } else if s.contains(",") && s.contains(".") {
+            // Both present — whichever comes last is the decimal separator
+            if s.lastIndex(of: ",")! > s.lastIndex(of: ".")! {
+                s = s.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
+            } else {
+                s = s.replacingOccurrences(of: ",", with: "")
+            }
+        } else if s.contains(",") {
+            // If the last comma-separated segment is exactly 3 digits, it's a thousands separator
+            // (e.g. ¥1,980 or ¥12,345,678). Otherwise treat comma as decimal separator.
+            let parts = s.components(separatedBy: ",")
+            if parts.count > 1 && parts.last?.count == 3 {
+                s = s.replacingOccurrences(of: ",", with: "")
             } else {
                 s = s.replacingOccurrences(of: ",", with: ".")
             }
-            guard let amount = Double(s), amount > 0,
-                  let euroAmount = ExchangeRates.convert(amount, from: currency),
-                  let rate = ExchangeRates.toEuro[currency] else { continue }
-            return ConversionResult(originalText: text, amount: amount, currency: currency,
-                                    currencySymbol: ExchangeRates.symbol(for: currency),
-                                    euroAmount: euroAmount, rate: rate)
         }
-        return nil
+        return Double(s)
+    }
+
+    static func extractAmount(_ text: String, currency: String) -> ConversionResult? {
+        let pattern = numberPattern(for: currency)
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let nsRange = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, range: nsRange),
+              let range = Range(match.range, in: text) else { return nil }
+        let s = String(text[range])
+        guard let amount = normalizeAmountString(s), amount > 0,
+              let euroAmount = ExchangeRates.convert(amount, from: currency),
+              let rate = ExchangeRates.toEuro[currency] else { return nil }
+        return ConversionResult(originalText: text, amount: amount, currency: currency,
+                                currencySymbol: ExchangeRates.symbol(for: currency),
+                                euroAmount: euroAmount, rate: rate)
+    }
+
+    // Two-pass entry point: currency detection per observation, then amount extraction
+    static func parse(from observations: [String]) -> ConversionResult? {
+        for (idx, obs) in observations.enumerated() {
+            guard let currency = detectCurrency(in: obs) else { continue }
+            let candidates = [obs]
+                + (idx > 0 ? [observations[idx - 1]] : [])
+                + (idx < observations.count - 1 ? [observations[idx + 1]] : [])
+                + [observations.joined(separator: " ")]
+            for candidate in candidates {
+                if let result = extractAmount(candidate, currency: currency) {
+                    return result
+                }
+            }
+        }
+        return parse(from: observations.joined(separator: " "))
+    }
+
+    // Single-string convenience: detect currency then extract amount
+    static func parse(from text: String) -> ConversionResult? {
+        guard let currency = detectCurrency(in: text) else { return nil }
+        return extractAmount(text, currency: currency)
     }
 }
 
@@ -183,6 +195,7 @@ final class CameraController: NSObject, ObservableObject, AVCaptureVideoDataOutp
     @Published var showResult = false
     @Published var torchOn = false
     @Published var permissionStatus: AVAuthorizationStatus = .notDetermined
+    @Published var detectedCurrencyCode: String? = nil
 
     let session = AVCaptureSession()
 
@@ -191,6 +204,31 @@ final class CameraController: NSObject, ObservableObject, AVCaptureVideoDataOutp
     private var isConfigured = false
     private var freezeOCR   = false
     private var lastOCRTime  = Date.distantPast
+    private var audioPlayer: AVAudioPlayer?
+    private var soundIndex  = 0
+    private let roiLock = NSLock()
+    private var _regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+
+    // Called from main thread whenever the viewfinder frame is known.
+    // Converts UIKit screen coordinates (origin top-left) to Vision normalized
+    // coordinates (origin bottom-left) so OCR is limited to the viewport.
+    func updateROI(viewfinderFrame: CGRect, screenSize: CGSize) {
+        let x = viewfinderFrame.minX / screenSize.width
+        let y = 1.0 - viewfinderFrame.maxY / screenSize.height
+        let w = viewfinderFrame.width  / screenSize.width
+        let h = viewfinderFrame.height / screenSize.height
+        roiLock.withLock { _regionOfInterest = CGRect(x: x, y: y, width: w, height: h) }
+    }
+
+    private static let soundNames = ["cha-ching", "cha-ching_2", "cha-ching_3"]
+
+    private func playNextSound() {
+        let name = Self.soundNames[soundIndex % Self.soundNames.count]
+        soundIndex += 1
+        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else { return }
+        audioPlayer = try? AVAudioPlayer(contentsOf: url)
+        audioPlayer?.play()
+    }
 
     func requestAndStart() {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
@@ -221,10 +259,12 @@ final class CameraController: NSObject, ObservableObject, AVCaptureVideoDataOutp
     }
 
     func resumeScanning() {
-        freezeOCR = false
         DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.3)) { self.detectedCurrencyCode = nil }
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { self.showResult = false }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { self.conversionResult = nil }
+            // Delay OCR until the viewfinder is fully visible (after sheet dismiss animation)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { self.freezeOCR = false }
         }
     }
 
@@ -286,9 +326,13 @@ final class CameraController: NSObject, ObservableObject, AVCaptureVideoDataOutp
             guard let self else { return }
             let strings = (req.results as? [VNRecognizedTextObservation] ?? [])
                 .compactMap { $0.topCandidates(1).first?.string }
-            let joined = strings.joined(separator: " ")
-            guard let result = PriceParser.parse(from: joined) else { return }
+            let currency = strings.compactMap { PriceParser.detectCurrency(in: $0) }.first
+            DispatchQueue.main.async {
+                withAnimation(.easeInOut(duration: 0.3)) { self.detectedCurrencyCode = currency }
+            }
+            guard let result = PriceParser.parse(from: strings) else { return }
             self.freezeOCR = true
+            self.playNextSound()
             DispatchQueue.main.async {
                 self.conversionResult = result
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { self.showResult = true }
@@ -297,6 +341,7 @@ final class CameraController: NSObject, ObservableObject, AVCaptureVideoDataOutp
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
         request.minimumTextHeight = 0.015
+        request.regionOfInterest = roiLock.withLock { _regionOfInterest }
 
         // Orientation .up because we already locked the capture connection to portrait
         try? VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up).perform([request])
@@ -357,6 +402,7 @@ struct ContentView: View {
 
             VStack {
                 HStack {
+                    resetButton.padding(.top, 56).padding(.leading, 24)
                     Spacer()
                     torchButton.padding(.top, 56).padding(.trailing, 24)
                 }
@@ -409,6 +455,16 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 18)
                 .frame(width: 290, height: 155)
                 .foregroundColor(.clear)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.onAppear {
+                            camera.updateROI(
+                                viewfinderFrame: geo.frame(in: .global),
+                                screenSize: UIScreen.main.bounds.size
+                            )
+                        }
+                    }
+                )
                 .overlay(
                     LinearGradient(
                         colors: [.clear, accentColor.opacity(0.9), .clear],
@@ -424,6 +480,19 @@ struct ContentView: View {
                     }
                 }
                 .allowsHitTesting(false)
+
+            if let code = camera.detectedCurrencyCode {
+                HStack(spacing: 6) {
+                    Image(systemName: "scope")
+                    Text("\(ExchangeRates.symbol(for: code))  \(code) detected")
+                }
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundColor(accentColor)
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(accentColor.opacity(0.15), in: Capsule())
+                .transition(.opacity.combined(with: .scale))
+                .offset(y: 95)
+            }
         }
     }
 
@@ -439,6 +508,16 @@ struct ContentView: View {
             Image(systemName: camera.torchOn ? "bolt.fill" : "bolt.slash.fill")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(camera.torchOn ? .yellow : .white.opacity(0.6))
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+        }
+    }
+
+    var resetButton: some View {
+        Button(action: { camera.resumeScanning() }) {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white.opacity(0.6))
                 .frame(width: 44, height: 44)
                 .background(.ultraThinMaterial, in: Circle())
         }
@@ -517,6 +596,7 @@ struct ContentView: View {
             )
         }
         .ignoresSafeArea(edges: .bottom)
+        .gesture(DragGesture().onEnded { if $0.translation.height > 60 { camera.resumeScanning() } })
     }
 
     var permissionDeniedView: some View {
